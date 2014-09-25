@@ -35,7 +35,11 @@
 
 <script type="text/javascript" src="js/touchgo.js"></script>
 <script type="text/javascript">
-	var TouchGo = new TouchGo("conwrap");
+    var TouchGo = new TouchGo(document.getElementsByClassName("conwrap")[0], {
+        speed: "300", //自动轮播的速度
+        auto: "true", //是否自动轮播
+        loop: "true"  //是否循环
+    });
 </script>
 </body>
 </html>

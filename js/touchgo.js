@@ -7,7 +7,7 @@
  */
 
 
-var TouchGo = function(con, nav) {
+var TouchGo = function(container, options) {
     //通用函数
     var comf = {
         doc: document,
@@ -43,9 +43,9 @@ var TouchGo = function(con, nav) {
             return children;
         },
         nextSibling: function(obj) {
-        	if(obj.nextElementSibling){
-        		return obj.nextElementSibling;
-        	}else if(obj.nextSibling && obj.nextSibling.nodeType === 1) {
+            if (obj.nextElementSibling) {
+                return obj.nextElementSibling;
+            } else if (obj.nextSibling && obj.nextSibling.nodeType === 1) {
                 return obj.nextSibling;
             } else {
                 if (!obj.nextSibling) {
@@ -75,36 +75,32 @@ var TouchGo = function(con, nav) {
     };
     //开始滑动
     function touchStart(event) {
+        clearTimeout(timer);
+        clearTimeout(timerRe);
         comf.preventDefault(event);
         var touchs = event.touches[0];
         start.X = touchs.pageX,
         start.Y = touchs.pageY;
-        for (var i = 0, j = slides.length; i < j; i++) {
-            comf.addEvent(slides[i], "touchmove", touchMove);
-            comf.addEvent(slides[i], "touchend", touchEnd);
-        }
     }
-    //touchMove
+    //滑动
     function touchMove() {
+        ele.style.webkitTransition = "none";
         comf.preventDefault(event);
         var touchs = event.touches[0],
             moveX = touchs.pageX,
             moveY = touchs.pageY,
             differ = Math.abs(moveX - start.X),
-            index = con.getAttribute("index");
-        dir = "-"; //- left; + right;
+            index = getIndex(),
+            dir = "-"; //- left; + right;
 
-        // var transformXY = ele.style.webkitTransform.match(reg);//结果 [20,-20]
-        // if(!transformXY){
-        //   transformXY = [0,0];
-        // }
-        ele.style.webkitTransition = "none";
         (moveX < start.X ? dir = "-" : dir = "+");
-        //第一个往右和最后一个往左时return
-        if ((index == 0 && dir == "+") || (index == size - 1 && dir == "-")) {
-            //第一个往右和最后一个往左最大可再滑动最大20
-            ele.style.webkitTransform = "translate(" + dir + (slideW * Number(index) + (differ > 20 ? 20 : differ)) + "px,0)";
-            return;
+        //当不循环时,第一个往右和最后一个往左时return
+        if (!loop) {
+            if ((index == 0 && dir == "+") || (index == size - 1 && dir == "-")) {
+                //第一个往右和最后一个往左最大可再滑动20
+                ele.style.webkitTransform = "translate(" + dir + (conW * index + (differ > 20 ? 20 : differ)) + "px,0)";
+                return;
+            }
         }
         if (dir === "+") {
             ele.style.webkitTransform = "translate(" + (end.X + differ) + "px,0)";
@@ -119,100 +115,140 @@ var TouchGo = function(con, nav) {
             endX = touchs.pageX,
             endY = touchs.pageY,
             differ = endX - start.X,
-            index = con.getAttribute("index");
-        dir = "-"; //- left; + right;
+            dir = "-"; //- left; + right;
 
-        // var transformXY = ele.style.webkitTransform.match(reg);//结果 [20,-20]
-        // if(!transformXY){
-        //   transformXY = [0,0];
-        // }
-        ele.style.webkitTransition = "all .5s";
         (endX < start.X ? dir = "-" : dir = "+");
-        //第一个往右和最后一个往左时return
-        if ((index == 0 && dir == "+") || (index == size - 1 && dir == "-")) {
-            ele.style.webkitTransform = "translate(" + dir + slideW * Number(index) + "px,0)";
+        //滑动距离不够时还原到当前位置
+        if (refDis >= Math.abs(differ)) {
+            ele.style.webkitTransform = "translate(-" + conW * index + "px,0)";
             return;
         }
-        if (refDis < Math.abs(differ)) {
-            if (dir === "+") {
-                ele.style.webkitTransform = "translate(" + "-" + slideW * (Number(index) - 1) + "px,0)";
-                end.X = Number("-" + slideW * (Number(index) - 1));
-                setIndex(Number(index) - 1);
-                moveNavs(Number(index) - 1);
-            } else {
-                ele.style.webkitTransform = "translate(" + dir + slideW * (Number(index) + 1) + "px,0)";
-                end.X = Number(dir + slideW * (Number(index) + 1));
-                setIndex(Number(index) + 1);
-                moveNavs(Number(index) + 1);
+        moveSlides(dir);
+
+    }
+    function moveSlides(dir){
+        var index = getIndex();
+        ele.style.webkitTransition = "all .5s";
+        //当不循环时,第一个往右和最后一个往左时return
+        if (!loop) {
+            //第一个往右和最后一个往左时return
+            if ((index == 0 && dir == "+") || (index == size - 1 && dir == "-")) {
+                ele.style.webkitTransform = "translate(" + dir + conW * index + "px,0)";
+                return;
             }
-        } else {
-            ele.style.webkitTransform = "translate(" + dir + slideW * Number(index) + "px,0)";
         }
 
-        for (var i = 0, j = slides.length; i < j; i++) {
-            comf.removeEvent(slides[i], "touchmove", touchMove);
-            comf.removeEvent(slides[i], "touchend", touchEnd);
-        }
+        if (dir === "+") {
+            
+            //让最后一个到最左侧需要将ele的  /*overflow: hidden;*/  去掉
+            if (index == 0 && loop) {
+                ele.style.webkitTransform = "translate(" + conW + "px,0)";
+                end.X = Number("-" + conW * (size - 1));
+                timerRe = setTimeout(function(){
+                    ele.style.webkitTransition = "none";
+                    ele.style.webkitTransform = "translate(-" + conW * (size - 1) + "px,0)";
+                },400);
+            }else{
+                ele.style.webkitTransform = "translate(-" + conW * (index - 1) + "px,0)";
+                end.X = Number("-" + conW * (index - 1));
+            }
+
+            setIndex(index - 1);
+            moveNavs(index - 1);
+        } else {
+            ele.style.webkitTransform = "translate(-" + conW * (index + 1) + "px,0)";
+            end.X = Number("-" + conW * (index + 1));
+
+            if (index == size - 1) {
+                timerRe = setTimeout(function(){
+                    ele.style.webkitTransition = "none";
+                    ele.style.webkitTransform = "translate(0,0)";
+                },400);
+                end.X = 0;
+            }
+
+            setIndex(index + 1);
+            moveNavs(index + 1);
+        }       
     }
-    //滚动
-    function moveNavs(index) {
-    	navs = comf.getChildren(nav);
-    	for (var i = 0, j = slides.length; i < j; i++) {
-    		if(i != index){
-    			var cl = navs[i].className;
-    			if(/c/.test(cl)){
-    				navs[i].className = cl.replace("c","");
-    			}
-    		}else{
-    			navs[i].className += " c";
-    		}
-    	}
+    //trigger滚动
+    function moveNavs() {
+        var index = getIndex();
+        for (var i = 0; i < size; i++) {
+            var cl = navs[i].className;
+            if (/c/.test(cl)) {
+                if (i == index) {
+                    return;
+                }
+                navs[i].className = cl.replace("c", "");
+                navs[index].className += " c";
+                return;
+            }
+        }
+
     }
 
     function setIndex(i) {
+        if (i == size) {
+            i = 0;
+        } else if (i == -1) {
+            i = size - 1
+        }
         con.setAttribute("index", i);
     }
-
     function getIndex() {
         return Number(con.getAttribute("index"));
     }
+    function moveInterval(){
+        moveSlides("-");
+        setTimeout(moveInterval, speed);
+    }
     //初始化
     function init() {
-        //nav = this.nav;
-        var navb="";
-        slideW = parseInt(comf.getComputedStyles(con)["width"].replace("px", ""));
-        ele.style.width = slideW * slides.length + "px";
-        for (var i = 0, j = slides.length; i < j; i++) {
-            slides[i].style.width = slideW + "px";
-        }
-        setIndex(0);
-        //navchildren = this.comf.getChildren(nav);
-        for (var i = 0, j = slides.length; i < j; i++) {
-            comf.addEvent(slides[i], "touchstart", touchStart);
-            //comf.addEvent(slides[i], "touchmove", touchMove);
-            //comf.addEvent(slides[i], "touchend", touchEnd);
-            //动态nav的li
-            if(i==0){
-            	navb += "<b class=' c'></b>";
-            }else{
-            	navb += "<b></b>";
+        //init width
+        nav = ele.nextElementSibling.className.indexOf("nav") > -1 ? ele.nextElementSibling : comf.getElesByClass("nav")[0];
+        var navb = "";
+        conW = parseInt(comf.getComputedStyles(con)["width"].replace("px", ""));
+        ele.style.width = conW * size + "px";
+        for (var i = 0, j = size; i < j; i++) {
+            slides[i].style.width = conW + "px";
+            // init nav 动态nav的子节点
+            if (i == 0) {
+                navb += "<b class=' c'></b>";
+            } else {
+                navb += "<b></b>";
             }
         }
+        setIndex(0);
+
+        //init event
+        comf.addEvent(ele, "touchstart", touchStart);
+        comf.addEvent(ele, "touchmove", touchMove);
+        comf.addEvent(ele, "touchend", touchEnd);
+
         nav.innerHTML = navb;
+        navs = comf.getChildren(nav);
+
+        //init auto
+        if (auto) {
+            timer = setInterval(function() {
+                moveSlides("-");
+            }, speed);
+            //timer = setTimeout(moveInterval, speed);
+        }
+
+        //init loop
+        if (loop) {
+            var clonef = slides[0].cloneNode(true),
+                clonel = slides[size - 1].cloneNode(true);
+            clonel.style.left = -conW * (size + 2) + "px";
+            ele.style.width = conW * (size + 3) + "px";
+            ele.appendChild(clonef);
+            ele.appendChild(clonel);
+        }
     }
-    //承载滚动图片的控件
-    // div ul li
-    var con = comf.getElesByClass(con)[0], //div
-        ele = comf.getChildren(con)[0], //ul
-        slides = comf.getChildren(ele), //li
-        size = slides.length, //子对象的个数   
-        slideW, //img width
-        //和图片一起滚动的trigger
-        nav = ele.nextElementSibling.className.indexOf("nav")>-1?ele.nextElementSibling:comf.getElesByClass("nav")[0],
-        navs,
-        index = 0, // 滚动到第几个
-        refDis = 50, // 滑动距离，》=50后滚动
-        reg = /\-?[0-9]+\.?[0-9]*/g; // 匹配transform
+
+    if (!container) return;
 
     var start = {
             X: 0, //开始位置x
@@ -221,7 +257,28 @@ var TouchGo = function(con, nav) {
         end = {
             X: 0, //结束位置x
             Y: 0 //结束位置y
-        }
+        };
 
+    var options = options || {},
+        // div ul li
+        con = container, //div
+        ele = comf.getChildren(con)[0], //ul
+        slides = comf.getChildren(ele), //li
+        size = slides.length, //li对象的个数
+
+        //option获取
+        speed = options.speed && 3000, //自动滚动的间隔
+        auto = (options.auto && options.auto == "true") || false, //是否自动滚动  true/false
+        loop = (options.loop && options.loop == "true") || false, //是否循环滚动  true/false
+
+        //code use
+        timer, //setTimeout  定时滚动
+        timerRe,
+        conW, //con width
+        nav, //和图片一起滚动的trigger
+        navs, //trigger的children
+        refDis = 50, // 滑动距离，>=50后滚动
+        reg = /\-?[0-9]+\.?[0-9]*/g; // 匹配transform
     return init();
+
 };
