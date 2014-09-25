@@ -10,7 +10,6 @@ div,p,dl,dd,a,b,em,input,textarea,button,select,form,section,label,span,td,li,na
 }
 li{list-style: none;}
 .conwrap{
-	overflow-y: hidden;
 	position: relative;
 }
 .touchGoCon{
