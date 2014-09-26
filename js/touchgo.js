@@ -1,4 +1,4 @@
-/*
+﻿/*
  * touchgo 1.0
  *
  * author tong
@@ -115,6 +115,7 @@ var TouchGo = function(container, options) {
             endX = touchs.pageX,
             endY = touchs.pageY,
             differ = endX - start.X,
+            index = getIndex(),
             dir = "-"; //- left; + right;
 
         (endX < start.X ? dir = "-" : dir = "+");
@@ -126,7 +127,8 @@ var TouchGo = function(container, options) {
         moveSlides(dir);
 
     }
-    function moveSlides(dir){
+
+    function moveSlides(dir) {
         var index = getIndex();
         ele.style.webkitTransition = "all .5s";
         //当不循环时,第一个往右和最后一个往左时return
@@ -139,16 +141,16 @@ var TouchGo = function(container, options) {
         }
 
         if (dir === "+") {
-            
+
             //让最后一个到最左侧需要将ele的  /*overflow: hidden;*/  去掉
             if (index == 0 && loop) {
                 ele.style.webkitTransform = "translate(" + conW + "px,0)";
                 end.X = Number("-" + conW * (size - 1));
-                timerRe = setTimeout(function(){
+                timerRe = setTimeout(function() {
                     ele.style.webkitTransition = "none";
                     ele.style.webkitTransform = "translate(-" + conW * (size - 1) + "px,0)";
-                },400);
-            }else{
+                }, 400);
+            } else {
                 ele.style.webkitTransform = "translate(-" + conW * (index - 1) + "px,0)";
                 end.X = Number("-" + conW * (index - 1));
             }
@@ -160,16 +162,16 @@ var TouchGo = function(container, options) {
             end.X = Number("-" + conW * (index + 1));
 
             if (index == size - 1) {
-                timerRe = setTimeout(function(){
+                timerRe = setTimeout(function() {
                     ele.style.webkitTransition = "none";
                     ele.style.webkitTransform = "translate(0,0)";
-                },400);
+                }, 400);
                 end.X = 0;
             }
 
             setIndex(index + 1);
             moveNavs(index + 1);
-        }       
+        }
     }
     //trigger滚动
     function moveNavs() {
@@ -196,10 +198,12 @@ var TouchGo = function(container, options) {
         }
         con.setAttribute("index", i);
     }
+
     function getIndex() {
         return Number(con.getAttribute("index"));
     }
-    function moveInterval(){
+
+    function moveInterval() {
         moveSlides("-");
         setTimeout(moveInterval, speed);
     }
@@ -231,10 +235,10 @@ var TouchGo = function(container, options) {
 
         //init auto
         if (auto) {
-            timer = setInterval(function() {
-                moveSlides("-");
-            }, speed);
-            //timer = setTimeout(moveInterval, speed);
+            // timer = setInterval(function() {
+            //     moveSlides("-");
+            // }, speed);
+            timer = setTimeout(moveInterval, speed);
         }
 
         //init loop
@@ -242,7 +246,7 @@ var TouchGo = function(container, options) {
             var clonef = slides[0].cloneNode(true),
                 clonel = slides[size - 1].cloneNode(true);
             clonel.style.left = -conW * (size + 2) + "px";
-            ele.style.width = conW * (size + 3) + "px";
+            ele.style.width = conW * (size + 2) + "px";
             ele.appendChild(clonef);
             ele.appendChild(clonel);
         }
